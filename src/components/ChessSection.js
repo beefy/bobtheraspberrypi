@@ -1,8 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Chess } from 'chess.js';
 import { useLichessLiveTV, useLichessGameStream } from '../utils/lichessHooks';
+import '../styles/chessground.css';
 
 const ChessBoard = ({ channel, gameData, gameState }) => {
+  const [gameInfo, setGameInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [chessGame, setChessGame] = useState(new Chess()); // Start with starting position
+  
   // Use the new polling hook to get real-time game data with moves
   const { 
     gameData: liveGameData, 
@@ -11,10 +16,6 @@ const ChessBoard = ({ channel, gameData, gameState }) => {
     error: streamError,
     loading: streamLoading
   } = useLichessGameStream(gameData?.gameId);
-  
-  const [gameInfo, setGameInfo] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [chessGame, setChessGame] = useState(new Chess());
 
   useEffect(() => {
     // Combine polling data with TV channel data
@@ -30,33 +31,30 @@ const ChessBoard = ({ channel, gameData, gameState }) => {
       
       setGameInfo(combinedGameInfo);
       
-      // Update chess game state with moves
+      // Update chess position with moves from the API
       if (liveMoves && liveMoves.length > 0) {
         try {
-          const newGame = new Chess();
+          const newGame = new Chess(); // Start fresh
           
-          console.log('Applying moves:', liveMoves);
+          console.log('Applying moves to board:', liveMoves);
           
-          // Play all moves to get current position
-          for (let i = 0; i < liveMoves.length; i++) {
-            const move = liveMoves[i];
+          // Apply each move sequentially
+          for (const move of liveMoves) {
             try {
-              const moveResult = newGame.move(move);
-              console.log(`Move ${i + 1}: ${move} ->`, moveResult);
+              newGame.move(move);
             } catch (moveErr) {
-              console.warn(`Invalid move at position ${i + 1}: ${move}`, moveErr);
+              console.warn(`Invalid move: ${move}`, moveErr);
               break;
             }
           }
           
-          console.log('Final position FEN:', newGame.fen());
-          console.log('Board state:', newGame.board());
+          console.log('Board updated. FEN:', newGame.fen());
           setChessGame(newGame);
         } catch (err) {
           console.warn('Error updating chess position:', err);
         }
       } else {
-        // Reset to starting position if no moves
+        // No moves = starting position
         console.log('No moves, showing starting position');
         setChessGame(new Chess());
       }
