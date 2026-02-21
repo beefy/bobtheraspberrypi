@@ -1,8 +1,8 @@
 import React from 'react';
-import { useLichessTV, getLichessEmbedUrl } from '../utils/lichessHooks';
+import { useLichessLiveTV, getLichessEmbedUrl } from '../utils/lichessHooks';
 
 const ChessSection = ({ data }) => {
-  const { games, loading, error, refetch } = useLichessTV(['bullet', 'blitz', 'rapid'], 30000);
+  const { games, gameStates, loading, error, refetch, isStreaming } = useLichessLiveTV(['bullet', 'blitz', 'rapid']);
 
   if (loading) {
     return (
@@ -44,53 +44,94 @@ const ChessSection = ({ data }) => {
     return titles[channel] || `♟️ ${channel} Chess TV`;
   };
 
-  const getChannelDescription = (channel, gameData) => {
+  const getChannelDescription = (channel, gameData, gameState) => {
     const { user, rating, color } = gameData;
     const playerName = user.title ? `${user.title} ${user.name}` : user.name;
-    return `${playerName} (${rating}) playing as ${color}`;
+    const streamingStatus = isStreaming(channel) ? '🔴 LIVE' : '⭕ Offline';
+    const moveCount = gameState?.moves ? ` • Move ${gameState.moves.split(' ').length}` : '';
+    
+    return `${streamingStatus} • ${playerName} (${rating}) as ${color}${moveCount}`;
+  };
+
+  const getGameStatus = (gameState) => {
+    if (!gameState) return '';
+    
+    if (gameState.status) {
+      const statusMap = {
+        started: '▶️ In Progress',
+        mate: '👑 Checkmate',
+        resign: '🏳️ Resignation',
+        stalemate: '🤝 Stalemate',
+        timeout: '⏰ Time Out',
+        draw: '🤝 Draw',
+        aborted: '❌ Aborted'
+      };
+      return statusMap[gameState.status] || gameState.status;
+    }
+    
+    return '';
   };
 
   return (
     <section className="content-section">
       <div className="section-header">
         <h2>♟️ Chess</h2>
-        <p className="section-subtitle">Live games from Lichess TV</p>
+        <p className="section-subtitle">Live streaming games from Lichess TV</p>
       </div>
       <div className="section-content">
         <div className="content-grid">
-          {Object.entries(games).map(([channel, gameData]) => (
-            <div key={channel} className="content-card chess-game-card">
-              <div className="chess-card-header">
-                <h3>{getChannelTitle(channel)}</h3>
-                <p className="game-info">{getChannelDescription(channel, gameData)}</p>
+          {Object.entries(games).map(([channel, gameData]) => {
+            const gameState = gameStates[channel];
+            const gameStatus = getGameStatus(gameState);
+            
+            return (
+              <div key={channel} className="content-card chess-game-card">
+                <div className="chess-card-header">
+                  <h3>{getChannelTitle(channel)}</h3>
+                  <p className="game-info">{getChannelDescription(channel, gameData, gameState)}</p>
+                  {gameStatus && (
+                    <p className="game-status">{gameStatus}</p>
+                  )}
+                  {gameState?.lastUpdate && (
+                    <p className="last-update">
+                      Updated: {new Date(gameState.lastUpdate).toLocaleTimeString()}
+                    </p>
+                  )}
+                </div>
+                <div className="chess-game-container">
+                  <iframe 
+                    src={getLichessEmbedUrl(gameData.gameId, { 
+                      theme: 'auto',
+                      bg: 'auto', 
+                      coords: '1',
+                      title: '0'
+                    })} 
+                    width="100%" 
+                    height="400"
+                    style={{ border: 'none', borderRadius: '8px' }}
+                    title={`Lichess ${channel} TV - ${gameData.user.name}`}
+                    allowFullScreen
+                  />
+                  {isStreaming(channel) && (
+                    <div className="live-indicator">
+                      <span className="live-dot"></span>
+                      LIVE
+                    </div>
+                  )}
+                </div>
+                <div className="chess-card-footer">
+                  <a 
+                    href={`https://lichess.org/${gameData.gameId}`}
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="view-on-lichess"
+                  >
+                    View on Lichess →
+                  </a>
+                </div>
               </div>
-              <div className="chess-game-container">
-                <iframe 
-                  src={getLichessEmbedUrl(gameData.gameId, { 
-                    theme: 'auto',
-                    bg: 'auto', 
-                    coords: '1',
-                    title: '0'
-                  })} 
-                  width="100%" 
-                  height="400"
-                  style={{ border: 'none', borderRadius: '8px' }}
-                  title={`Lichess ${channel} TV - ${gameData.user.name}`}
-                  allowFullScreen
-                />
-              </div>
-              <div className="chess-card-footer">
-                <a 
-                  href={`https://lichess.org/${gameData.gameId}`}
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="view-on-lichess"
-                >
-                  View on Lichess →
-                </a>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
         
         {Object.keys(games).length === 0 && (
