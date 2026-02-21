@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Chess } from 'chess.js';
 import { useLichessLiveTV, useLichessGameStream } from '../utils/lichessHooks';
 
 const ChessBoard = ({ channel, gameData, gameState }) => {
@@ -13,6 +14,7 @@ const ChessBoard = ({ channel, gameData, gameState }) => {
   
   const [gameInfo, setGameInfo] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [chessGame, setChessGame] = useState(new Chess());
 
   useEffect(() => {
     // Combine polling data with TV channel data
@@ -27,6 +29,38 @@ const ChessBoard = ({ channel, gameData, gameState }) => {
       };
       
       setGameInfo(combinedGameInfo);
+      
+      // Update chess game state with moves
+      if (liveMoves && liveMoves.length > 0) {
+        try {
+          const newGame = new Chess();
+          
+          console.log('Applying moves:', liveMoves);
+          
+          // Play all moves to get current position
+          for (let i = 0; i < liveMoves.length; i++) {
+            const move = liveMoves[i];
+            try {
+              const moveResult = newGame.move(move);
+              console.log(`Move ${i + 1}: ${move} ->`, moveResult);
+            } catch (moveErr) {
+              console.warn(`Invalid move at position ${i + 1}: ${move}`, moveErr);
+              break;
+            }
+          }
+          
+          console.log('Final position FEN:', newGame.fen());
+          console.log('Board state:', newGame.board());
+          setChessGame(newGame);
+        } catch (err) {
+          console.warn('Error updating chess position:', err);
+        }
+      } else {
+        // Reset to starting position if no moves
+        console.log('No moves, showing starting position');
+        setChessGame(new Chess());
+      }
+      
       setLoading(false);
     }
   }, [liveGameData, gameData, liveMoves, isLive, streamError]);
@@ -55,21 +89,56 @@ const ChessBoard = ({ channel, gameData, gameState }) => {
 
   return (
     <div className="chess-board-container">
-      {/* Simple visual chess board placeholder */}
+      {/* Chess board visualization with live positions */}
       <div className="chess-board-visual">
         <div className="chess-grid">
           {Array.from({ length: 64 }).map((_, i) => {
+            // Calculate row and column from index
             const row = Math.floor(i / 8);
             const col = i % 8;
             const isLight = (row + col) % 2 === 0;
+            
+            // Convert to chess coordinates (a1-h8)
+            // Row 0 = rank 8, Row 7 = rank 1 (flipped for display)
+            const rank = 8 - row;
+            const file = String.fromCharCode(97 + col); // a-h
+            const square = file + rank; // e.g., 'e4'
+            
+            // Get piece from current chess position
+            const piece = chessGame.get(square);
+            
+            const getPieceSymbol = (piece) => {
+              if (!piece) return '';
+              
+              const symbols = {
+                'k': piece.color === 'w' ? '♔' : '♚', // King
+                'q': piece.color === 'w' ? '♕' : '♛', // Queen  
+                'r': piece.color === 'w' ? '♖' : '♜', // Rook
+                'b': piece.color === 'w' ? '♗' : '♝', // Bishop
+                'n': piece.color === 'w' ? '♘' : '♞', // Knight
+                'p': piece.color === 'w' ? '♙' : '♟'  // Pawn
+              };
+              
+              return symbols[piece.type] || '';
+            };
+            
+            const pieceSymbol = getPieceSymbol(piece);
+            
             return (
               <div 
                 key={i} 
                 className={`chess-square ${isLight ? 'light' : 'dark'}`}
-              ></div>
+                data-square={square}
+                title={`${square}${piece ? ` - ${piece.color === 'w' ? 'White' : 'Black'} ${piece.type}` : ''}`}
+              >
+                {pieceSymbol && (
+                  <span className="chess-piece">{pieceSymbol}</span>
+                )}
+              </div>
             );
           })}
         </div>
+        
         <div className="chess-overlay">
           <div className="game-link">
             <a 
@@ -80,6 +149,16 @@ const ChessBoard = ({ channel, gameData, gameState }) => {
             >
               ▶️ Watch Live on Lichess
             </a>
+            {gameInfo?.movesArray?.length > 0 && (
+              <div className="moves-info">
+                <span className="move-count">{gameInfo.movesArray.length} moves played</span>
+                <span className="current-turn">
+                  {chessGame.turn() === 'w' ? "White's turn" : "Black's turn"}
+                </span>
+                {chessGame.isCheck() && <span className="check-indicator">♔ Check!</span>}
+                {chessGame.isCheckmate() && <span className="checkmate-indicator">♔ Checkmate!</span>}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -89,24 +168,49 @@ const ChessBoard = ({ channel, gameData, gameState }) => {
           <div className="players">
             <div className="player white">
               <span className="color-indicator">⚪</span>
-              <span className="name">{gameInfo.players?.white?.user?.name || 'Anonymous'}</span>
+              <span className="name">{gameInfo.players?.white?.userId || 'Anonymous'}</span>
               <span className="rating">({gameInfo.players?.white?.rating || '?'})</span>
             </div>
             <div className="vs">VS</div>
             <div className="player black">
               <span className="color-indicator">⚫</span>
-              <span className="name">{gameInfo.players?.black?.user?.name || 'Anonymous'}</span>
+              <span className="name">{gameInfo.players?.black?.userId || 'Anonymous'}</span>
               <span className="rating">({gameInfo.players?.black?.rating || '?'})</span>
             </div>
           </div>
           <div className="game-meta">
             <span className="time-control">{gameInfo.clock?.initial ? `${gameInfo.clock.initial / 60}+${gameInfo.clock.increment}` : 'Unknown time'}</span>
             <span className="separator">•</span>
-            <span className="game-status">{gameInfo.status === 'started' ? '🔴 Live' : gameInfo.status}</span>
+            <span className="game-status">
+              {isLive ? '🟢 Live Stream' : (gameInfo.status === 'draw' ? '🤝 Draw' : gameInfo.status)}
+            </span>
+            <span className="separator">•</span>
+            <span className="turn-info">Turn {gameInfo.turns || gameInfo.movesArray?.length || 'Unknown'}</span>
           </div>
-          {gameInfo.moves && (
-            <div className="move-count">
-              Moves: {gameInfo.moves.split(' ').length}
+          
+          {gameInfo.movesArray && gameInfo.movesArray.length > 0 && (
+            <div className="moves-section">
+              <div className="moves-header">Live Moves ({gameInfo.movesArray.length}):</div>
+              <div className="moves-list">
+                {gameInfo.movesArray.slice(-8).map((move, idx, arr) => (
+                  <span key={idx} className={`move ${idx === arr.length - 1 ? 'latest-move' : ''}`}>
+                    {move}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {gameInfo.moves && !gameInfo.movesArray && (
+            <div className="moves-section">
+              <div className="moves-header">Game Moves ({gameInfo.moves.split(' ').length}):</div>
+              <div className="moves-list">
+                {gameInfo.moves.split(' ').slice(-8).map((move, idx, arr) => (
+                  <span key={idx} className={`move ${idx === arr.length - 1 ? 'latest-move' : ''}`}>
+                    {move}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
         </div>
