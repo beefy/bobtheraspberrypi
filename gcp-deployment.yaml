@@ -1,0 +1,92 @@
+# Google Cloud Platform deployment configuration
+
+# Cloud Run deployment
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: bob-raspberry-pi-app
+  annotations:
+    run.googleapis.com/ingress: all
+    run.googleapis.com/execution-environment: gen2
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: "10"
+        autoscaling.knative.dev/minScale: "0"
+        run.googleapis.com/cpu-throttling: "false"
+        run.googleapis.com/execution-environment: gen2
+        run.googleapis.com/memory: "1Gi"
+        run.googleapis.com/cpu: "1"
+    spec:
+      containerConcurrency: 100
+      timeoutSeconds: 300
+      containers:
+      - name: bob-raspberry-pi
+        image: gcr.io/PROJECT_ID/bob-raspberry-pi:latest
+        ports:
+        - name: http1
+          containerPort: 80
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: REACT_APP_API_URL
+          value: "https://your-api-domain.com/api"
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+          requests:
+            cpu: 100m
+            memory: 256Mi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+  traffic:
+  - percent: 100
+    latestRevision: true
+
+---
+# Compute Engine startup script
+#!/bin/bash
+
+# Update system
+sudo apt-get update -y
+
+# Install Docker
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+sudo usermod -aG docker $USER
+
+# Install Docker Compose
+sudo curl -L "https://github.com/docker/compose/releases/download/v2.21.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+
+# Create app directory
+sudo mkdir -p /opt/bob-raspberry-pi
+sudo chown $USER:$USER /opt/bob-raspberry-pi
+cd /opt/bob-raspberry-pi
+
+# Pull and run the application
+docker pull gcr.io/PROJECT_ID/bob-raspberry-pi:latest
+docker run -d \
+  --name bob-raspberry-pi-app \
+  --restart unless-stopped \
+  -p 80:80 \
+  -e NODE_ENV=production \
+  -e REACT_APP_API_URL=https://your-api-domain.com/api \
+  gcr.io/PROJECT_ID/bob-raspberry-pi:latest
+
+# Setup monitoring
+sudo apt-get install -y curl htop
+
+echo "Bob the Raspberry Pi deployment complete!"
