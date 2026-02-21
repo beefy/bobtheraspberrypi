@@ -19,7 +19,7 @@ function App() {
 
   useEffect(() => {
     // Initialize data when component mounts
-    // This would typically fetch from your MongoDB
+    // This would typically fetch from your backend API
     console.log('App initialized');
   }, []);
 

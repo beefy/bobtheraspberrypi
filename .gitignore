@@ -108,9 +108,6 @@ Dockerfile.dev
 .gcloudignore
 gcp-key.json
 
-# MongoDB
-*.mongodb
-
 # Backup files
 *.backup
 *.bak

@@ -7,7 +7,6 @@ A comprehensive React-based dashboard for monitoring and managing various aspect
 ### 🏗️ Architecture
 - **Frontend**: React 18 with modern hooks and context
 - **Styling**: Custom CSS with responsive design and glassmorphism effects
-- **Database**: MongoDB with comprehensive utilities
 - **Deployment**: Google Cloud Platform with CI/CD
 - **Containerization**: Docker and Docker Compose
 
@@ -28,7 +27,7 @@ A comprehensive React-based dashboard for monitoring and managing various aspect
 
 ### Prerequisites
 - Node.js 18+ 
-- MongoDB
+- Backend API service
 - Docker (optional)
 - Google Cloud SDK (for deployment)
 
@@ -47,12 +46,10 @@ A comprehensive React-based dashboard for monitoring and managing various aspect
    # Edit .env.local with your configuration
    ```
 
-3. **Start MongoDB** (if running locally)
+3. **Start Backend API** (if running locally)
    ```bash
-   # Using Docker
-   docker run -d -p 27017:27017 --name mongodb mongo:7.0
-   
-   # Or install MongoDB locally
+   # Start your backend API service
+   # This should be running on localhost:5000
    ```
 
 4. **Run development server**
@@ -72,7 +69,7 @@ A comprehensive React-based dashboard for monitoring and managing various aspect
 
 2. **Access the application**
    - Frontend: `http://localhost:3000`
-   - MongoDB: `localhost:27017`
+   - Backend API: `localhost:5000`
 
 ## Project Structure
 
@@ -89,9 +86,7 @@ bobtheraspberrypi/
 │   │   ├── StatusSection.js
 │   │   └── Footer.js
 │   ├── utils/             # Utilities
-│   │   ├── mongoAPI.js    # MongoDB API functions
-│   │   ├── mongoUtils.js  # MongoDB utilities
-│   │   └── mongoConfig.js # MongoDB configuration
+   │   └── api.js         # Backend API client
 │   ├── App.js             # Main application
 │   ├── App.css            # Main styles
 │   └── index.js           # Entry point
@@ -105,40 +100,36 @@ bobtheraspberrypi/
 └── package.json           # Dependencies and scripts
 ```
 
-## MongoDB Schema
+## API Endpoints
 
-### Collections
-- `chess_games` - Chess game records
-- `chess_analysis` - Game analysis data
-- `system_health` - System health metrics
-- `system_performance` - Performance data
-- `crypto_portfolio` - Cryptocurrency holdings
-- `crypto_prices` - Price tracking
-- `service_status` - Service monitoring
-- `recent_activities` - Activity logs
+### Backend Services
+- `chess/*` - Chess game endpoints
+- `system/*` - System monitoring endpoints  
+- `crypto/*` - Cryptocurrency endpoints
+- `status/*` - Status and activity endpoints
 
-### Example Documents
+### Example API Responses
 
 **Chess Game:**
 ```javascript
 {
+  id: "game-123",
   white: "Player1",
   black: "Player2", 
   result: "1-0",
   moves: ["e4", "e5", "Nf3"],
-  createdAt: ISODate(),
-  type: "chess_game"
+  createdAt: "2026-02-20T10:00:00Z"
 }
 ```
 
 **System Metrics:**
 ```javascript
 {
+  id: "metric-456",
   cpu: { usage: 45.2, temperature: 65, cores: 4 },
   memory: { used: 2048, total: 8192, percentage: 25 },
   disk: { used: 50000, total: 250000, percentage: 20 },
-  createdAt: ISODate(),
-  type: "system_metrics"
+  timestamp: "2026-02-20T10:00:00Z"
 }
 ```
 
@@ -146,13 +137,13 @@ bobtheraspberrypi/
 
 ### Chess API
 ```javascript
-import { MongoAPI } from './utils/mongoAPI';
+import { API } from './utils/api';
 
 // Get recent games
-const games = await MongoAPI.Chess.getGames(10);
+const games = await API.Chess.getGames(10);
 
 // Create new game
-const newGame = await MongoAPI.Chess.createGame({
+const newGame = await API.Chess.createGame({
   white: "Alice",
   black: "Bob", 
   result: "1-0",
@@ -163,10 +154,10 @@ const newGame = await MongoAPI.Chess.createGame({
 ### System API
 ```javascript
 // Get health metrics
-const health = await MongoAPI.System.getHealthMetrics('24h');
+const health = await API.System.getHealthMetrics('24h');
 
 // Add system metric
-await MongoAPI.System.addMetric({
+await API.System.addMetric({
   cpu: { usage: 45.2 },
   memory: { used: 2048, total: 8192 }
 });
@@ -192,7 +183,6 @@ await MongoAPI.System.addMetric({
    - `GCP_PROJECT_ID`: Your GCP project ID
    - `GCP_SA_KEY`: Service account key JSON
    - `REACT_APP_API_URL`: API endpoint URL
-   - `REACT_APP_MONGODB_URI`: MongoDB connection string
 
 4. **Deploy**
    ```bash
@@ -257,11 +247,8 @@ npm run lint:fix
 ### Environment Variables
 See `.env.example` for all available configuration options.
 
-### MongoDB Configuration
-Configure connection settings in `src/utils/mongoConfig.js`.
-
 ### API Configuration
-Modify API endpoints in `src/utils/mongoAPI.js`.
+Modify API endpoints in `src/utils/api.js`.
 
 ## Contributing
 
@@ -282,7 +269,7 @@ For support, email support@bobtheraspberrypi.com or open an issue on GitHub.
 ## Acknowledgments
 
 - React team for the amazing framework
-- MongoDB for the flexible database
+- Backend API teams for reliable services
 - Google Cloud for reliable hosting
 - The open source community
 
