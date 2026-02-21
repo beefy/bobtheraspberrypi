@@ -1,5 +1,109 @@
-import React from 'react';
-import { useLichessLiveTV, getLichessEmbedUrl } from '../utils/lichessHooks';
+import React, { useEffect, useState } from 'react';
+import { useLichessLiveTV } from '../utils/lichessHooks';
+
+const ChessBoard = ({ channel, gameData, gameState }) => {
+  const [gameInfo, setGameInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchGamePosition = async () => {
+      if (!gameData?.gameId) return;
+      
+      try {
+        setLoading(true);
+        // Fetch current game state from Lichess API
+        const response = await fetch(`https://lichess.org/api/game/${gameData.gameId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setGameInfo(data);
+        } else {
+          console.warn('Could not fetch game details');
+        }
+      } catch (error) {
+        console.error('Error fetching game position:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchGamePosition();
+    
+    // Refresh game info every 30 seconds
+    const interval = setInterval(fetchGamePosition, 30000);
+    return () => clearInterval(interval);
+  }, [gameData?.gameId]);
+
+  if (loading) {
+    return (
+      <div className="chess-board-container">
+        <div className="chess-board-placeholder">
+          <div className="loading-spinner">⏳ Loading game...</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="chess-board-container">
+      {/* Simple visual chess board placeholder */}
+      <div className="chess-board-visual">
+        <div className="chess-grid">
+          {Array.from({ length: 64 }).map((_, i) => {
+            const row = Math.floor(i / 8);
+            const col = i % 8;
+            const isLight = (row + col) % 2 === 0;
+            return (
+              <div 
+                key={i} 
+                className={`chess-square ${isLight ? 'light' : 'dark'}`}
+              ></div>
+            );
+          })}
+        </div>
+        <div className="chess-overlay">
+          <div className="game-link">
+            <a 
+              href={`https://lichess.org/${gameData.gameId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="play-button"
+            >
+              ▶️ Watch Live on Lichess
+            </a>
+          </div>
+        </div>
+      </div>
+      
+      {gameInfo && (
+        <div className="game-details">
+          <div className="players">
+            <div className="player white">
+              <span className="color-indicator">⚪</span>
+              <span className="name">{gameInfo.players?.white?.user?.name || 'Anonymous'}</span>
+              <span className="rating">({gameInfo.players?.white?.rating || '?'})</span>
+            </div>
+            <div className="vs">VS</div>
+            <div className="player black">
+              <span className="color-indicator">⚫</span>
+              <span className="name">{gameInfo.players?.black?.user?.name || 'Anonymous'}</span>
+              <span className="rating">({gameInfo.players?.black?.rating || '?'})</span>
+            </div>
+          </div>
+          <div className="game-meta">
+            <span className="time-control">{gameInfo.clock?.initial ? `${gameInfo.clock.initial / 60}+${gameInfo.clock.increment}` : 'Unknown time'}</span>
+            <span className="separator">•</span>
+            <span className="game-status">{gameInfo.status === 'started' ? '🔴 Live' : gameInfo.status}</span>
+          </div>
+          {gameInfo.moves && (
+            <div className="move-count">
+              Moves: {gameInfo.moves.split(' ').length}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const ChessSection = ({ data }) => {
   const { games, gameStates, loading, error, refetch, isStreaming } = useLichessLiveTV(['bullet', 'blitz', 'rapid']);
@@ -46,11 +150,15 @@ const ChessSection = ({ data }) => {
 
   const getChannelDescription = (channel, gameData, gameState) => {
     const { user, rating, color } = gameData;
-    const playerName = user.title ? `${user.title} ${user.name}` : user.name;
-    const streamingStatus = isStreaming(channel) ? '🔴 LIVE' : '⭕ Offline';
-    const moveCount = gameState?.moves ? ` • Move ${gameState.moves.split(' ').length}` : '';
     
-    return `${streamingStatus} • ${playerName} (${rating}) as ${color}${moveCount}`;
+    // Ensure we're working with strings, not objects
+    const playerName = user?.title ? `${user.title} ${user.name || user.id || 'Unknown'}` : (user?.name || user?.id || 'Unknown Player');
+    const playerRating = rating || 'Unrated';
+    const playerColor = color || 'unknown';
+    
+    const streamingStatus = isStreaming(channel) ? '🔴 LIVE' : '⭕ Updating';
+    
+    return `${streamingStatus} • ${playerName} (${playerRating}) as ${playerColor}`;
   };
 
   const getGameStatus = (gameState) => {
@@ -89,9 +197,7 @@ const ChessSection = ({ data }) => {
                 <div className="chess-card-header">
                   <h3>{getChannelTitle(channel)}</h3>
                   <p className="game-info">{getChannelDescription(channel, gameData, gameState)}</p>
-                  {gameStatus && (
-                    <p className="game-status">{gameStatus}</p>
-                  )}
+
                   {gameState?.lastUpdate && (
                     <p className="last-update">
                       Updated: {new Date(gameState.lastUpdate).toLocaleTimeString()}
@@ -99,18 +205,10 @@ const ChessSection = ({ data }) => {
                   )}
                 </div>
                 <div className="chess-game-container">
-                  <iframe 
-                    src={getLichessEmbedUrl(gameData.gameId, { 
-                      theme: 'auto',
-                      bg: 'auto', 
-                      coords: '1',
-                      title: '0'
-                    })} 
-                    width="100%" 
-                    height="400"
-                    style={{ border: 'none', borderRadius: '8px' }}
-                    title={`Lichess ${channel} TV - ${gameData.user.name}`}
-                    allowFullScreen
+                  <ChessBoard 
+                    channel={channel}
+                    gameData={gameData}
+                    gameState={gameState}
                   />
                   {isStreaming(channel) && (
                     <div className="live-indicator">
@@ -121,12 +219,12 @@ const ChessSection = ({ data }) => {
                 </div>
                 <div className="chess-card-footer">
                   <a 
-                    href={`https://lichess.org/${gameData.gameId}`}
+                    href={`https://lichess.org/tv/${channel}`}
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="view-on-lichess"
                   >
-                    View on Lichess →
+                    Watch {channel} TV on Lichess →
                   </a>
                 </div>
               </div>
