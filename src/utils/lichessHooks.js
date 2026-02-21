@@ -223,6 +223,95 @@ export const useLichessLiveGame = (gameId) => {
 };
 
 /**
+ * Hook to fetch live game data using simple polling with moves
+ * @param {string} gameId - Lichess game ID  
+ * @returns {object} { gameData, moves, currentFen, isLive, error }
+ */
+export const useLichessGameStream = (gameId) => {
+  const [gameData, setGameData] = useState(null);
+  const [moves, setMoves] = useState([]);
+  const [isLive, setIsLive] = useState(false);
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const abortControllerRef = useRef(null);
+
+  useEffect(() => {
+    if (!gameId) return;
+
+    const pollGame = async () => {
+      try {
+        setError(null);
+        
+        // Cancel previous request
+        if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
+        }
+
+        const controller = new AbortController();
+        abortControllerRef.current = controller;
+
+        // Use the simple game endpoint with moves
+        const response = await fetch(`${LICHESS_API_BASE}/game/${gameId}?with_moves=1`, {
+          signal: controller.signal,
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Game data received:', data);
+          
+          setGameData(data);
+          setIsLive(data.status === 'started');
+          
+          // Parse moves from the moves string
+          if (data.moves) {
+            const moveArray = data.moves.split(' ').filter(m => m.trim());
+            setMoves(moveArray);
+          } else {
+            setMoves([]);
+          }
+          
+          setLoading(false);
+        } else {
+          throw new Error(`HTTP ${response.status}`);
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError') {
+          console.error('Error polling game:', err);
+          setError('Failed to fetch game data');
+          setIsLive(false);
+        }
+      }
+    };
+
+    // Initial poll
+    pollGame();
+    
+    // Set up polling interval - poll every 3 seconds for live games
+    const interval = setInterval(() => {
+      if (!abortControllerRef.current?.signal.aborted) {
+        pollGame();
+      }
+    }, 3000);
+
+    return () => {
+      clearInterval(interval);
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [gameId]);
+
+  return {
+    gameData,
+    moves,
+    currentFen: null, // This endpoint doesn't provide FEN, but we have moves
+    isLive,
+    error,
+    loading
+  };
+};
+
+/**
  * Hook to fetch a specific game's data
  * @param {string} gameId - Lichess game ID
  * @returns {object} { game, loading, error }

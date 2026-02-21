@@ -1,43 +1,53 @@
 import React, { useEffect, useState } from 'react';
-import { useLichessLiveTV } from '../utils/lichessHooks';
+import { useLichessLiveTV, useLichessGameStream } from '../utils/lichessHooks';
 
 const ChessBoard = ({ channel, gameData, gameState }) => {
+  // Use the new polling hook to get real-time game data with moves
+  const { 
+    gameData: liveGameData, 
+    moves: liveMoves, 
+    isLive, 
+    error: streamError,
+    loading: streamLoading
+  } = useLichessGameStream(gameData?.gameId);
+  
   const [gameInfo, setGameInfo] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchGamePosition = async () => {
-      if (!gameData?.gameId) return;
+    // Combine polling data with TV channel data
+    if (liveGameData || gameData) {
+      const combinedGameInfo = {
+        ...gameData,
+        ...liveGameData,
+        moves: liveMoves?.join(' ') || null,
+        movesArray: liveMoves || [],
+        isLive: isLive,
+        streamError: streamError
+      };
       
-      try {
-        setLoading(true);
-        // Fetch current game state from Lichess API
-        const response = await fetch(`https://lichess.org/api/game/${gameData.gameId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setGameInfo(data);
-        } else {
-          console.warn('Could not fetch game details');
-        }
-      } catch (error) {
-        console.error('Error fetching game position:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+      setGameInfo(combinedGameInfo);
+      setLoading(false);
+    }
+  }, [liveGameData, gameData, liveMoves, isLive, streamError]);
 
-    fetchGamePosition();
-    
-    // Refresh game info every 30 seconds
-    const interval = setInterval(fetchGamePosition, 30000);
-    return () => clearInterval(interval);
-  }, [gameData?.gameId]);
-
-  if (loading) {
+  if ((loading || streamLoading) && !streamError) {
     return (
       <div className="chess-board-container">
         <div className="chess-board-placeholder">
-          <div className="loading-spinner">⏳ Loading game...</div>
+          <div className="loading-spinner">
+            {isLive ? '🔄 Loading live game...' : '⏳ Connecting to game...'}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (streamError) {
+    return (
+      <div className="chess-board-container">
+        <div className="chess-board-placeholder">
+          <div className="loading-spinner">⚠️ {streamError}</div>
         </div>
       </div>
     );
