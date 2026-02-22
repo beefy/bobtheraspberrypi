@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 
 const LICHESS_API_BASE = 'https://lichess.org/api';
@@ -16,7 +16,7 @@ export const useLichessLiveTV = (channels = ['bullet', 'blitz', 'rapid'], refres
   const [error, setError] = useState(null);
   const intervalRef = useRef(null);
 
-  const fetchTVChannels = async () => {
+  const fetchTVChannels = useCallback(async () => {
     try {
       const response = await axios.get(`${LICHESS_API_BASE}/tv/channels`);
       const allChannels = response.data;
@@ -65,7 +65,7 @@ export const useLichessLiveTV = (channels = ['bullet', 'blitz', 'rapid'], refres
     } finally {
       setLoading(false);
     }
-  };
+  }, [channels]);
 
   useEffect(() => {
     fetchTVChannels();
@@ -78,7 +78,7 @@ export const useLichessLiveTV = (channels = ['bullet', 'blitz', 'rapid'], refres
         clearInterval(intervalRef.current);
       }
     };
-  }, [refreshInterval, channels, fetchTVChannels]);
+  }, [refreshInterval, fetchTVChannels]);
 
   return {
     games,
