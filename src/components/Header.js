@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { apiClient } from '../utils/api';
 
 const Header = () => {
   const [email, setEmail] = useState('');
@@ -30,7 +29,7 @@ const Header = () => {
       });
 
       if (response.ok) {
-        const data = await response.json();
+        await response.json(); // Consume response but don't need the data
         setShowSuccess(true);
         setEmail('');
         setShowForm(false);
