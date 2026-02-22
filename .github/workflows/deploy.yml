@@ -76,6 +76,7 @@ jobs:
           --cpu=1
           --max-instances=10
           --min-instances=0
+          --timeout=300
 
     - name: Show output
       run: echo ${{ steps.deploy.outputs.url }}
