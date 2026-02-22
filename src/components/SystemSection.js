@@ -47,19 +47,36 @@ const SystemSection = ({ data }) => {
     if (!data || data.length === 0) return 'No data available';
     
     const latest = data[0]; // Most recent data point
+    
+    // Format CPU as percentage (convert from decimal to percentage)
+    const cpuPercent = latest.cpu ? (latest.cpu * 100).toFixed(1) : 0;
+    
+    // Format memory and disk as GB or MB if they're raw byte values
+    const formatBytes = (bytes) => {
+      if (!bytes) return '0';
+      
+      const gb = bytes / (1024 * 1024 * 1024);
+      if (gb >= 1) {
+        return `${gb.toFixed(1)} GB`;
+      }
+      
+      const mb = bytes / (1024 * 1024);
+      return `${mb.toFixed(0)} MB`;
+    };
+    
     return (
       <div className="metrics">
         <div className="metric-item">
           <span className="metric-label">CPU:</span>
-          <span className="metric-value">{latest.cpu?.toFixed(1)}%</span>
+          <span className="metric-value">{cpuPercent}%</span>
         </div>
         <div className="metric-item">
           <span className="metric-label">Memory:</span>
-          <span className="metric-value">{latest.memory?.toFixed(1)}%</span>
+          <span className="metric-value">{formatBytes(latest.memory)}</span>
         </div>
         <div className="metric-item">
           <span className="metric-label">Disk:</span>
-          <span className="metric-value">{latest.disk?.toFixed(1)}%</span>
+          <span className="metric-value">{formatBytes(latest.disk)}</span>
         </div>
         <div className="metric-item">
           <span className="metric-label">Last Update:</span>
@@ -73,7 +90,13 @@ const SystemSection = ({ data }) => {
     if (!data || data.length === 0) return '#666';
     
     const latest = data[0];
-    const maxUsage = Math.max(latest.cpu || 0, latest.memory || 0, latest.disk || 0);
+    // Convert CPU to percentage for status calculation
+    const cpuPercent = latest.cpu ? latest.cpu * 100 : 0;
+    // For memory and disk, we'll assume they're usage percentages if under 100, otherwise raw values
+    const memoryPercent = latest.memory < 100 ? latest.memory : (latest.memory / (8 * 1024 * 1024 * 1024)) * 100; // Assuming 8GB total
+    const diskPercent = latest.disk < 100 ? latest.disk : (latest.disk / (500 * 1024 * 1024 * 1024)) * 100; // Assuming 500GB total
+    
+    const maxUsage = Math.max(cpuPercent, memoryPercent, diskPercent);
     
     if (maxUsage > 90) return '#ff4444'; // Red for high usage
     if (maxUsage > 70) return '#ffaa00'; // Orange for medium usage
