@@ -3,7 +3,7 @@
  * This abstracts away the backend implementation details
  */
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://api.bobtheraspberrypi.com/api';
 
 class ApiClient {
   constructor() {
@@ -11,7 +11,11 @@ class ApiClient {
   }
 
   async request(endpoint, options = {}) {
-    const url = `${this.baseURL}${endpoint}`;
+    // Ensure proper URL joining
+    const cleanBaseURL = this.baseURL.endsWith('/') ? this.baseURL.slice(0, -1) : this.baseURL;
+    const cleanEndpoint = endpoint.startsWith('/') ? endpoint : '/' + endpoint;
+    const url = `${cleanBaseURL}${cleanEndpoint}`;
+    
     const config = {
       headers: {
         'Content-Type': 'application/json',
@@ -36,8 +40,13 @@ class ApiClient {
 
   async get(endpoint, params = {}) {
     const queryString = new URLSearchParams(params).toString();
-    const url = queryString ? `${endpoint}?${queryString}` : endpoint;
-    return this.request(url);
+    const fullEndpoint = queryString ? `${endpoint}?${queryString}` : endpoint;
+    return this.request(fullEndpoint, {
+      method: 'GET',
+      headers: {
+        'accept': 'application/json'
+      }
+    });
   }
 
   async post(endpoint, data) {
@@ -105,6 +114,15 @@ export const SystemAPI = {
   
   getSystemInfo: () => 
     apiClient.get('/system/info'),
+  
+  getSystemInfoTimeseries: (agentName, startDate, endDate, limit = 50, skip = 0) => 
+    apiClient.get('/v1/system-info/', {
+      agent_name: agentName,
+      start_date: startDate,
+      end_date: endDate,
+      limit,
+      skip
+    }),
   
   addMetric: (metricData) => 
     apiClient.post('/system/metrics', metricData),
