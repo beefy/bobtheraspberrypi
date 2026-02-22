@@ -134,6 +134,12 @@ export const SystemAPI = {
       agent: agentName
     }),
   
+  getStatusUpdates: (agentName = '', limit = 25) => 
+    apiClient.get('/v1/status-updates/', {
+      agent_name: agentName,
+      limit
+    }),
+  
   addMetric: (metricData) => 
     apiClient.post('/system/metrics', metricData),
 };
