@@ -71,35 +71,6 @@ A comprehensive React-based dashboard for monitoring and managing various aspect
    - Frontend: `http://localhost:3000`
    - Backend API: `localhost:5000`
 
-## Project Structure
-
-```
-bobtheraspberrypi/
-├── public/                 # Static assets
-├── src/
-│   ├── components/        # React components
-│   │   ├── Header.js      # Site header
-│   │   ├── Navigation.js  # Section navigation
-│   │   ├── ChessSection.js
-│   │   ├── SystemSection.js
-│   │   ├── CryptoSection.js
-│   │   ├── StatusSection.js
-│   │   └── Footer.js
-│   ├── utils/             # Utilities
-   │   └── api.js         # Backend API client
-│   ├── App.js             # Main application
-│   ├── App.css            # Main styles
-│   └── index.js           # Entry point
-├── .github/workflows/     # GitHub Actions
-│   ├── deploy.yml         # Deployment pipeline
-│   └── test.yml           # Testing pipeline
-├── docker-compose.yml     # Docker services
-├── Dockerfile             # Container definition
-├── nginx.conf             # Nginx configuration
-├── gcp-deployment.yaml    # GCP deployment config
-└── package.json           # Dependencies and scripts
-```
-
 ## API Endpoints
 
 ### Backend Services
