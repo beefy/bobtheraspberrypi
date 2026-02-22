@@ -439,6 +439,22 @@
   min-height: 500px;
 }
 
+.agent-header {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+}
+
+.agent-header h3 {
+  margin: 0 0 0.5rem 0;
+}
+
+.heartbeat-status {
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
 .current-metrics {
   margin-bottom: 1.5rem;
   padding: 1rem;

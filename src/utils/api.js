@@ -124,6 +124,11 @@ export const SystemAPI = {
       skip
     }),
   
+  getHeartbeat: (agentName) => 
+    apiClient.get('/v1/heartbeat/', {
+      agent_name: agentName
+    }),
+  
   addMetric: (metricData) => 
     apiClient.post('/system/metrics', metricData),
 };

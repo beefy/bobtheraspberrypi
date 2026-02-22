@@ -8,6 +8,11 @@ const SystemSection = ({ data }) => {
     bobby: null,
     robert: null
   });
+  const [heartbeatData, setHeartbeatData] = useState({
+    bob: null,
+    bobby: null,
+    robert: null
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -21,17 +26,29 @@ const SystemSection = ({ data }) => {
         const endDate = new Date().toISOString();
         const startDate = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-        // Fetch data for all agents in parallel
-        const [bobData, bobbyData, robertData] = await Promise.all([
+        // Fetch system data and heartbeats for all agents in parallel
+        const [
+          bobData, bobbyData, robertData,
+          bobHeartbeat, bobbyHeartbeat, robertHeartbeat
+        ] = await Promise.all([
           SystemAPI.getSystemInfoTimeseries('bob', startDate, endDate, 50),
           SystemAPI.getSystemInfoTimeseries('bobby', startDate, endDate, 50),
-          SystemAPI.getSystemInfoTimeseries('robert', startDate, endDate, 50)
+          SystemAPI.getSystemInfoTimeseries('robert', startDate, endDate, 50),
+          SystemAPI.getHeartbeat('bob'),
+          SystemAPI.getHeartbeat('bobby'),
+          SystemAPI.getHeartbeat('robert')
         ]);
 
         setSystemData({
           bob: bobData,
           bobby: bobbyData,
           robert: robertData
+        });
+
+        setHeartbeatData({
+          bob: bobHeartbeat[0] || null,
+          bobby: bobbyHeartbeat[0] || null,
+          robert: robertHeartbeat[0] || null
         });
       } catch (err) {
         console.error('Failed to fetch system data:', err);
@@ -77,12 +94,53 @@ const SystemSection = ({ data }) => {
     return [value, name];
   };
 
+  const formatTimeAgo = (timestamp) => {
+    if (!timestamp) return 'No heartbeat data';
+    
+    const now = new Date();
+    const heartbeatTime = new Date(timestamp);
+    const diffMs = now - heartbeatTime;
+    
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffSeconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+    
+    if (diffMinutes === 0) {
+      return `${diffSeconds} seconds ago`;
+    } else if (diffMinutes < 60) {
+      return `${diffMinutes} min ${diffSeconds} seconds ago`;
+    } else {
+      const diffHours = Math.floor(diffMinutes / 60);
+      const remainingMinutes = diffMinutes % 60;
+      return `${diffHours} hour${diffHours > 1 ? 's' : ''} ${remainingMinutes} min ago`;
+    }
+  };
+
+  const getHeartbeatColor = (timestamp) => {
+    if (!timestamp) return '#666'; // Gray for no data
+    
+    const now = new Date();
+    const heartbeatTime = new Date(timestamp);
+    const diffMs = now - heartbeatTime;
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    
+    if (diffMinutes < 15) return '#00aa00'; // Green for < 15 minutes
+    if (diffMinutes < 30) return '#ffaa00'; // Yellow for < 30 minutes
+    return '#ff4444'; // Red for >= 60 minutes (1 hour)
+  };
+
   const renderAgentSection = (agentName, data, color) => {
     const chartData = formatChartData(data);
+    const heartbeat = heartbeatData[agentName];
+    const heartbeatColor = getHeartbeatColor(heartbeat?.last_heartbeat_ts);
     
     return (
       <div className="content-card agent-section">
-        <h3 style={{ color: color }}>{agentName.charAt(0).toUpperCase() + agentName.slice(1)}</h3>
+        <div className="agent-header">
+          <h3 style={{ color: color }}>{agentName.charAt(0).toUpperCase() + agentName.slice(1)}</h3>
+          <div className="heartbeat-status" style={{ color: heartbeatColor }}>
+            Last heartbeat: {formatTimeAgo(heartbeat?.last_heartbeat_ts)}
+          </div>
+        </div>
         
         {chartData.length === 0 ? (
           <div className="no-data">No data available</div>
