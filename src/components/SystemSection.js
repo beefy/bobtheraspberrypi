@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { SystemAPI } from '../utils/api';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const SystemSection = ({ data }) => {
   const [systemData, setSystemData] = useState({
@@ -22,9 +23,9 @@ const SystemSection = ({ data }) => {
 
         // Fetch data for all agents in parallel
         const [bobData, bobbyData, robertData] = await Promise.all([
-          SystemAPI.getSystemInfoTimeseries('bob', startDate, endDate, 10),
-          SystemAPI.getSystemInfoTimeseries('bobby', startDate, endDate, 10),
-          SystemAPI.getSystemInfoTimeseries('robert', startDate, endDate, 10)
+          SystemAPI.getSystemInfoTimeseries('bob', startDate, endDate, 50),
+          SystemAPI.getSystemInfoTimeseries('bobby', startDate, endDate, 50),
+          SystemAPI.getSystemInfoTimeseries('robert', startDate, endDate, 50)
         ]);
 
         setSystemData({
@@ -43,45 +44,133 @@ const SystemSection = ({ data }) => {
     fetchSystemData();
   }, []);
 
-  const formatMetrics = (data) => {
-    if (!data || data.length === 0) return 'No data available';
+  const formatChartData = (data) => {
+    if (!data || data.length === 0) return [];
     
-    const latest = data[0]; // Most recent data point
-    
-    // Format CPU as percentage (convert from decimal to percentage)
-    const cpuPercent = latest.cpu ? (latest.cpu * 100).toFixed(1) : 0;
-    
-    // Format memory and disk as GB or MB if they're raw byte values
-    const formatBytes = (bytes) => {
-      if (!bytes) return '0';
-      
-      const gb = bytes / (1024 * 1024 * 1024);
-      if (gb >= 1) {
-        return `${gb.toFixed(1)} GB`;
-      }
-      
-      const mb = bytes / (1024 * 1024);
-      return `${mb.toFixed(0)} MB`;
-    };
+    return data
+      .map(item => ({
+        time: new Date(item.ts).toLocaleTimeString(),
+        timestamp: new Date(item.ts).getTime(),
+        cpu: item.cpu ? (item.cpu * 100).toFixed(1) : 0,
+        memory: item.memory ? (item.memory / (1024 * 1024 * 1024)).toFixed(1) : 0, // Convert to GB
+        disk: item.disk ? (item.disk / (1024 * 1024 * 1024)).toFixed(1) : 0 // Convert to GB
+      }))
+      .sort((a, b) => a.timestamp - b.timestamp); // Sort by time
+  };
+
+  const getLatestValue = (data, metric) => {
+    if (!data || data.length === 0) return 'N/A';
+    const latest = data[data.length - 1]; // Most recent after sorting
+    return latest[metric];
+  };
+
+  const formatTooltip = (value, name, props) => {
+    if (name === 'cpu') {
+      return [`${value}%`, 'CPU Usage'];
+    }
+    if (name === 'memory') {
+      return [`${value} GB`, 'Memory Usage'];
+    }
+    if (name === 'disk') {
+      return [`${value} GB`, 'Disk Usage'];
+    }
+    return [value, name];
+  };
+
+  const renderAgentSection = (agentName, data, color) => {
+    const chartData = formatChartData(data);
     
     return (
-      <div className="metrics">
-        <div className="metric-item">
-          <span className="metric-label">CPU:</span>
-          <span className="metric-value">{cpuPercent}%</span>
-        </div>
-        <div className="metric-item">
-          <span className="metric-label">Memory:</span>
-          <span className="metric-value">{formatBytes(latest.memory)}</span>
-        </div>
-        <div className="metric-item">
-          <span className="metric-label">Disk:</span>
-          <span className="metric-value">{formatBytes(latest.disk)}</span>
-        </div>
-        <div className="metric-item">
-          <span className="metric-label">Last Update:</span>
-          <span className="metric-value">{new Date(latest.ts).toLocaleTimeString()}</span>
-        </div>
+      <div className="content-card agent-section">
+        <h3 style={{ color: color }}>{agentName.charAt(0).toUpperCase() + agentName.slice(1)}</h3>
+        
+        {chartData.length === 0 ? (
+          <div className="no-data">No data available</div>
+        ) : (
+          <>
+            <div className="current-metrics">
+              <div className="metric-summary">
+                <span>CPU: {getLatestValue(chartData, 'cpu')}%</span>
+                <span>Memory: {getLatestValue(chartData, 'memory')} GB</span>
+                <span>Disk: {getLatestValue(chartData, 'disk')} GB</span>
+              </div>
+            </div>
+            
+            <div className="chart-container">
+              <div className="chart-section">
+                <h4>CPU Usage (%)</h4>
+                <ResponsiveContainer width="100%" height={120}>
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="time" 
+                      fontSize={10}
+                      interval="preserveStartEnd"
+                    />
+                    <YAxis 
+                      fontSize={10}
+                      domain={[0, 100]}
+                    />
+                    <Tooltip formatter={formatTooltip} />
+                    <Line 
+                      type="monotone" 
+                      dataKey="cpu" 
+                      stroke="#8884d8" 
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              
+              <div className="chart-section">
+                <h4>Memory Usage (GB)</h4>
+                <ResponsiveContainer width="100%" height={120}>
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="time" 
+                      fontSize={10}
+                      interval="preserveStartEnd"
+                    />
+                    <YAxis fontSize={10} />
+                    <Tooltip formatter={formatTooltip} />
+                    <Line 
+                      type="monotone" 
+                      dataKey="memory" 
+                      stroke="#82ca9d" 
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              
+              <div className="chart-section">
+                <h4>Disk Usage (GB)</h4>
+                <ResponsiveContainer width="100%" height={120}>
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis 
+                      dataKey="time" 
+                      fontSize={10}
+                      interval="preserveStartEnd"
+                    />
+                    <YAxis fontSize={10} />
+                    <Tooltip formatter={formatTooltip} />
+                    <Line 
+                      type="monotone" 
+                      dataKey="disk" 
+                      stroke="#ffc658" 
+                      strokeWidth={2}
+                      dot={false}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     );
   };
@@ -89,17 +178,14 @@ const SystemSection = ({ data }) => {
   const getStatusColor = (data) => {
     if (!data || data.length === 0) return '#666';
     
-    const latest = data[0];
-    // Convert CPU to percentage for status calculation
-    const cpuPercent = latest.cpu ? latest.cpu * 100 : 0;
-    // For memory and disk, we'll assume they're usage percentages if under 100, otherwise raw values
-    const memoryPercent = latest.memory < 100 ? latest.memory : (latest.memory / (8 * 1024 * 1024 * 1024)) * 100; // Assuming 8GB total
-    const diskPercent = latest.disk < 100 ? latest.disk : (latest.disk / (500 * 1024 * 1024 * 1024)) * 100; // Assuming 500GB total
+    const chartData = formatChartData(data);
+    if (chartData.length === 0) return '#666';
     
-    const maxUsage = Math.max(cpuPercent, memoryPercent, diskPercent);
+    const latest = chartData[chartData.length - 1];
+    const cpuPercent = parseFloat(latest.cpu);
     
-    if (maxUsage > 90) return '#ff4444'; // Red for high usage
-    if (maxUsage > 70) return '#ffaa00'; // Orange for medium usage
+    if (cpuPercent > 90) return '#ff4444'; // Red for high usage
+    if (cpuPercent > 70) return '#ffaa00'; // Orange for medium usage
     return '#00aa00'; // Green for low usage
   };
 
@@ -127,21 +213,10 @@ const SystemSection = ({ data }) => {
             {error}
           </div>
         )}
-        <div className="content-grid">
-          <div className="content-card">
-            <h3 style={{ color: getStatusColor(systemData.bob) }}>Bob</h3>
-            {formatMetrics(systemData.bob)}
-          </div>
-          
-          <div className="content-card">
-            <h3 style={{ color: getStatusColor(systemData.bobby) }}>Bobby</h3>
-            {formatMetrics(systemData.bobby)}
-          </div>
-          
-          <div className="content-card">
-            <h3 style={{ color: getStatusColor(systemData.robert) }}>Robert</h3>
-            {formatMetrics(systemData.robert)}
-          </div>
+        <div className="system-grid">
+          {renderAgentSection('bob', systemData.bob, getStatusColor(systemData.bob))}
+          {renderAgentSection('bobby', systemData.bobby, getStatusColor(systemData.bobby))}
+          {renderAgentSection('robert', systemData.robert, getStatusColor(systemData.robert))}
         </div>
       </div>
     </section>
