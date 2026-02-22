@@ -10,7 +10,7 @@ import Footer from './components/Footer';
 
 function App() {
   const [activeSection, setActiveSection] = useState('chess');
-  const [data, setData] = useState({
+  const [data] = useState({
     chess: {},
     system: {},
     crypto: {},

@@ -4,26 +4,6 @@ import axios from 'axios';
 const LICHESS_API_BASE = 'https://lichess.org/api';
 
 /**
- * Utility to parse NDJSON stream
- * @param {string} text - NDJSON text
- * @returns {array} Array of parsed JSON objects
- */
-const parseNDJSON = (text) => {
-  return text
-    .split('\n')
-    .filter(line => line.trim())
-    .map(line => {
-      try {
-        return JSON.parse(line);
-      } catch (e) {
-        console.warn('Failed to parse line:', line);
-        return null;
-      }
-    })
-    .filter(obj => obj !== null);
-};
-
-/**
  * Hook to fetch live chess games from Lichess TV with real-time updates
  * @param {string[]} channels - Array of TV channels to fetch (bullet, blitz, rapid, etc.)
  * @param {number} refreshInterval - How often to refresh data in milliseconds
@@ -98,7 +78,7 @@ export const useLichessLiveTV = (channels = ['bullet', 'blitz', 'rapid'], refres
         clearInterval(intervalRef.current);
       }
     };
-  }, [refreshInterval, channels.join(',')]);
+  }, [refreshInterval, channels, fetchTVChannels]);
 
   return {
     games,
@@ -392,9 +372,11 @@ export const getLichessTVEmbedUrl = (channel, options = {}) => {
   return `https://lichess.org/tv/${channel}/embed?${params.toString()}`;
 };
 
-export default {
+export const lichessHooks = {
   useLichessLiveTV,
   useLichessLiveGame,
   useLichessGame,
   getLichessEmbedUrl
 };
+
+export default lichessHooks;

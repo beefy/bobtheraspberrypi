@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Chess } from 'chess.js';
 import { useLichessLiveTV, useLichessGameStream } from '../utils/lichessHooks';
 import '../styles/chessground.css';
@@ -273,25 +273,6 @@ const ChessSection = ({ data }) => {
     return `${streamingStatus} • ${playerName} (${playerRating}) as ${playerColor}`;
   };
 
-  const getGameStatus = (gameState) => {
-    if (!gameState) return '';
-    
-    if (gameState.status) {
-      const statusMap = {
-        started: '▶️ In Progress',
-        mate: '👑 Checkmate',
-        resign: '🏳️ Resignation',
-        stalemate: '🤝 Stalemate',
-        timeout: '⏰ Time Out',
-        draw: '🤝 Draw',
-        aborted: '❌ Aborted'
-      };
-      return statusMap[gameState.status] || gameState.status;
-    }
-    
-    return '';
-  };
-
   return (
     <section className="content-section">
       <div className="section-header">
@@ -302,7 +283,6 @@ const ChessSection = ({ data }) => {
         <div className="content-grid">
           {Object.entries(games).map(([channel, gameData]) => {
             const gameState = gameStates[channel];
-            const gameStatus = getGameStatus(gameState);
             
             return (
               <div key={channel} className="content-card chess-game-card">

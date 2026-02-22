@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { SystemAPI } from '../utils/api';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const SystemSection = ({ data }) => {
   const [systemData, setSystemData] = useState({
