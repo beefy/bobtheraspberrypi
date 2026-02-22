@@ -13,6 +13,11 @@ const SystemSection = ({ data }) => {
     bobby: null,
     robert: null
   });
+  const [responseTimeData, setResponseTimeData] = useState({
+    bob: null,
+    bobby: null,
+    robert: null
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -26,17 +31,21 @@ const SystemSection = ({ data }) => {
         const endDate = new Date().toISOString();
         const startDate = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-        // Fetch system data and heartbeats for all agents in parallel
+        // Fetch system data, heartbeats, and response times for all agents in parallel
         const [
           bobData, bobbyData, robertData,
-          bobHeartbeat, bobbyHeartbeat, robertHeartbeat
+          bobHeartbeat, bobbyHeartbeat, robertHeartbeat,
+          bobResponseTime, bobbyResponseTime, robertResponseTime
         ] = await Promise.all([
           SystemAPI.getSystemInfoTimeseries('bob', startDate, endDate, 50),
           SystemAPI.getSystemInfoTimeseries('bobby', startDate, endDate, 50),
           SystemAPI.getSystemInfoTimeseries('robert', startDate, endDate, 50),
           SystemAPI.getHeartbeat('bob'),
           SystemAPI.getHeartbeat('bobby'),
-          SystemAPI.getHeartbeat('robert')
+          SystemAPI.getHeartbeat('robert'),
+          SystemAPI.getResponseTimeStats('bob'),
+          SystemAPI.getResponseTimeStats('bobby'),
+          SystemAPI.getResponseTimeStats('robert')
         ]);
 
         setSystemData({
@@ -49,6 +58,12 @@ const SystemSection = ({ data }) => {
           bob: bobHeartbeat[0] || null,
           bobby: bobbyHeartbeat[0] || null,
           robert: robertHeartbeat[0] || null
+        });
+
+        setResponseTimeData({
+          bob: bobResponseTime[0] || null,
+          bobby: bobbyResponseTime[0] || null,
+          robert: robertResponseTime[0] || null
         });
       } catch (err) {
         console.error('Failed to fetch system data:', err);
@@ -128,9 +143,20 @@ const SystemSection = ({ data }) => {
     return '#ff4444'; // Red for >= 60 minutes (1 hour)
   };
 
+  const formatResponseTime = (responseTimeMs) => {
+    if (responseTimeMs === null || responseTimeMs === undefined) return 'No data';
+    
+    if (responseTimeMs < 1000) {
+      return `${responseTimeMs} ms`;
+    } else {
+      return `${(responseTimeMs / 1000).toFixed(2)} s`;
+    }
+  };
+
   const renderAgentSection = (agentName, data, color) => {
     const chartData = formatChartData(data);
     const heartbeat = heartbeatData[agentName];
+    const responseTime = responseTimeData[agentName];
     const heartbeatColor = getHeartbeatColor(heartbeat?.last_heartbeat_ts);
     
     return (
@@ -139,6 +165,9 @@ const SystemSection = ({ data }) => {
           <h3 style={{ color: color }}>{agentName.charAt(0).toUpperCase() + agentName.slice(1)}</h3>
           <div className="heartbeat-status" style={{ color: heartbeatColor }}>
             Last heartbeat: {formatTimeAgo(heartbeat?.last_heartbeat_ts)}
+          </div>
+          <div className="response-time-status">
+            Avg response time: {formatResponseTime(responseTime?.average_response_time_ms)}
           </div>
         </div>
         

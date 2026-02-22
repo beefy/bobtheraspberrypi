@@ -455,6 +455,13 @@
   margin-bottom: 0.5rem;
 }
 
+.response-time-status {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #4a5568;
+  margin-bottom: 0.5rem;
+}
+
 .current-metrics {
   margin-bottom: 1.5rem;
   padding: 1rem;

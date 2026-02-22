@@ -129,6 +129,11 @@ export const SystemAPI = {
       agent_name: agentName
     }),
   
+  getResponseTimeStats: (agentName) => 
+    apiClient.get('/v1/response-times/stats', {
+      agent: agentName
+    }),
+  
   addMetric: (metricData) => 
     apiClient.post('/system/metrics', metricData),
 };
