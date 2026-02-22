@@ -81,7 +81,7 @@ coverage/
 
 # Gatsby files
 .cache/
-public
+# Note: public folder should not be ignored for React apps
 
 # Storybook build outputs
 .out
