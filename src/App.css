@@ -658,6 +658,30 @@
   border-color: rgba(102, 126, 234, 0.3);
 }
 
+.explorer-link {
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.explorer-btn {
+  display: inline-block;
+  background: rgba(72, 187, 120, 0.1);
+  color: #38a169;
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(72, 187, 120, 0.3);
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.explorer-btn:hover {
+  background: rgba(72, 187, 120, 0.2);
+  border-color: rgba(72, 187, 120, 0.5);
+  transform: translateY(-1px);
+}
+
 .address-label {
   font-size: 0.8rem;
   color: #718096;
@@ -734,6 +758,40 @@
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  flex: 1;
+}
+
+.transaction-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.confirmation-status {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.confirmation-status.finalized {
+  background: rgba(72, 187, 120, 0.1);
+  color: #38a169;
+  border: 1px solid rgba(72, 187, 120, 0.3);
+}
+
+.confirmation-status.pending {
+  background: rgba(237, 137, 54, 0.1);
+  color: #dd6b20;
+  border: 1px solid rgba(237, 137, 54, 0.3);
+}
+
+.program-used {
+  font-size: 0.75rem;
+  color: #a0aec0;
+  font-style: italic;
 }
 
 .holding-symbol, .transaction-type {
@@ -831,6 +889,16 @@
   
   .holding-item, .transaction-item {
     padding: 0.5rem;
+  }
+  
+  .transaction-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .confirmation-status {
+    align-self: flex-end;
   }
 }
 

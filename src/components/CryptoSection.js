@@ -67,7 +67,9 @@ const CryptoSection = ({ data }) => {
                 tx.sol_direction === 'sent' ? 'sent' : 'other',
           amount: tx.sol_change || 0,
           symbol: 'SOL',
-          timestamp: new Date(tx.block_time * 1000).toISOString()
+          timestamp: new Date(tx.block_time * 1000).toISOString(),
+          program_used: tx.program_used || 'Unknown',
+          confirmed: tx.confirmation_status === 'TransactionConfirmationStatus.Finalized'
         }));
         
         walletResults[agentName] = {
@@ -158,6 +160,17 @@ const CryptoSection = ({ data }) => {
                   {`${data.address.slice(0, 6)}...${data.address.slice(-6)}`}
                 </span>
               </div>
+              
+              <div className="explorer-link">
+                <a 
+                  href={`https://solscan.io/account/${data.address}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="explorer-btn"
+                >
+                  🔍 View on Solscan
+                </a>
+              </div>
 
               <div className="wallet-summary">
                 <div className="total-value">
@@ -192,12 +205,20 @@ const CryptoSection = ({ data }) => {
                     data.recentTransactions.map((tx, index) => (
                       <div key={index} className="transaction-item">
                         <div className="transaction-info">
-                          <span className={`transaction-type ${tx.type}`}>
-                          {tx.type === 'received' ? '↓ received' : 
-                           tx.type === 'sent' ? '↑ sent' : '• other'} 
-                          </span>
+                          <div className="transaction-header">
+                            <span className={`transaction-type ${tx.type}`}>
+                            {tx.type === 'received' ? '↓ received' : 
+                             tx.type === 'sent' ? '↑ sent' : '• other'} 
+                            </span>
+                            <span className={`confirmation-status ${tx.confirmed ? 'finalized' : 'pending'}`}>
+                              {tx.confirmed ? '✓ Finalized' : '⏳ Pending'}
+                            </span>
+                          </div>
                           <span className="transaction-amount">
                             {formatTokenAmount(tx.amount, tx.symbol)} {tx.symbol}
+                          </span>
+                          <span className="program-used">
+                            via {tx.program_used}
                           </span>
                         </div>
                         <div className="transaction-time">
