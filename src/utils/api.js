@@ -165,6 +165,18 @@ export const CryptoAPI = {
   
   updatePortfolio: (portfolioData) => 
     apiClient.put('/crypto/portfolio', portfolioData),
+  
+  // Solana wallet functions
+  getWalletData: (walletAddress) => 
+    apiClient.get(`/v1/crypto/wallet/${walletAddress}`),
+  
+  getWalletTransactions: (walletAddress, limit = 10) => 
+    apiClient.get(`/v1/crypto/wallet/${walletAddress}/transactions`, { limit }),
+  
+  getTokenPrices: (tokenAddresses = []) => 
+    apiClient.get('/v1/crypto/token-prices', { 
+      tokens: tokenAddresses.join(',') 
+    }),
 };
 
 /**
