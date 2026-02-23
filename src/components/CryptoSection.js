@@ -152,24 +152,23 @@ const CryptoSection = ({ data }) => {
         <div className="crypto-grid">
           {Object.entries(walletData).map(([agentName, data]) => (
             <div key={agentName} className="wallet-card">
-              <h3 className="wallet-agent-name">{agentName}</h3>
+              <div className="wallet-header">
+                <h3 className="wallet-agent-name">{agentName}</h3>
+                <a 
+                  href={`https://solscan.io/account/${data.address}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="explorer-btn-inline"
+                >
+                  🔍 Solscan
+                </a>
+              </div>
               
               <div className="wallet-address" onClick={() => copyToClipboard(data.address)}>
                 <span className="address-label">Address:</span>
                 <span className="address-value" title="Click to copy">
                   {`${data.address.slice(0, 6)}...${data.address.slice(-6)}`}
                 </span>
-              </div>
-              
-              <div className="explorer-link">
-                <a 
-                  href={`https://solscan.io/account/${data.address}`} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="explorer-btn"
-                >
-                  🔍 View on Solscan
-                </a>
               </div>
 
               <div className="wallet-summary">
@@ -204,25 +203,27 @@ const CryptoSection = ({ data }) => {
                   {data.recentTransactions.length > 0 ? (
                     data.recentTransactions.map((tx, index) => (
                       <div key={index} className="transaction-item">
-                        <div className="transaction-info">
-                          <div className="transaction-header">
-                            <span className={`transaction-type ${tx.type}`}>
-                            {tx.type === 'received' ? '↓ received' : 
-                             tx.type === 'sent' ? '↑ sent' : '• other'} 
-                            </span>
-                            <span className={`confirmation-status ${tx.confirmed ? 'finalized' : 'pending'}`}>
-                              {tx.confirmed ? '✓ Finalized' : '⏳ Pending'}
-                            </span>
-                          </div>
-                          <span className="transaction-amount">
-                            {formatTokenAmount(tx.amount, tx.symbol)} {tx.symbol}
+                        <div className="transaction-header">
+                          <span className={`transaction-type ${tx.type}`}>
+                          {tx.type === 'received' ? '↓ received' : 
+                           tx.type === 'sent' ? '↑ sent' : '• other'} 
                           </span>
-                          <span className="program-used">
-                            via {tx.program_used}
+                          <span className={`confirmation-status ${tx.confirmed ? 'finalized' : 'pending'}`}>
+                            {tx.confirmed ? '✓ Finalized' : '⏳ Pending'}
                           </span>
                         </div>
-                        <div className="transaction-time">
-                          {new Date(tx.timestamp).toLocaleDateString()}
+                        <div className="transaction-details">
+                          <div className="transaction-left">
+                            <span className="transaction-amount">
+                              {formatTokenAmount(tx.amount, tx.symbol)} {tx.symbol}
+                            </span>
+                            <span className="program-used">
+                              via {tx.program_used}
+                            </span>
+                          </div>
+                          <div className="transaction-time">
+                            {new Date(tx.timestamp).toLocaleDateString()}
+                          </div>
                         </div>
                       </div>
                     ))
