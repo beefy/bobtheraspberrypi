@@ -762,6 +762,10 @@
   color: #f56565;
 }
 
+.transaction-type.failed {
+  color: #e53e3e;
+}
+
 .transaction-time {
   font-size: 0.8rem;
   color: #a0aec0;
@@ -788,6 +792,13 @@
 .refresh-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.no-holdings, .no-transactions {
+  text-align: center;
+  color: #a0aec0;
+  font-style: italic;
+  padding: 1rem;
 }
 
 .loading-spinner {
