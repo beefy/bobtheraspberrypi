@@ -766,6 +766,10 @@
   color: #e53e3e;
 }
 
+.transaction-type.other {
+  color: #718096;
+}
+
 .transaction-time {
   font-size: 0.8rem;
   color: #a0aec0;
